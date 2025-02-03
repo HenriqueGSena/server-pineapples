@@ -1,0 +1,8 @@
+spring:
+  profiles:
+    active: ${APP_PROFILE:dev}
+  jpa:
+    open-in-view: false
+  docker:
+    compose:
+      enabled: false
