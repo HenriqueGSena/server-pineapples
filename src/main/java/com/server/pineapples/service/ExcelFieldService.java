@@ -10,27 +10,50 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ExcelFieldService {
 
-    public List<String[]> extractFileXlsx(MultipartFile file) throws IOException {
-        List<String[]> data = new ArrayList<>();
+    public List<Map<String, String>> extractFileXlsx(MultipartFile file) throws IOException {
+        List<Map<String, String>> data = new ArrayList<>();
 
         try (InputStream inputStream = file.getInputStream(); Workbook workbook = new XSSFWorkbook(inputStream)) {
-
             Sheet sheet = workbook.getSheetAt(0);
-            for (Row row : sheet) {
-                List<String> rowData = new ArrayList<>();
-                for (Cell cell : row) {
-                    rowData.add(getCellValue(cell));
+
+            Row headerRow = sheet.getRow(0);
+            if (headerRow == null) {
+                throw new IllegalArgumentException("O arquivo está vazio ou não contém cabeçalhos.");
+            }
+
+            List<String> headers = new ArrayList<>();
+            for (Cell cell : headerRow) {
+                headers.add(getCellValue(cell));
+            }
+
+            for (int i = 1; i <= sheet.getPhysicalNumberOfRows(); i++) {
+                Row row = sheet.getRow(i);
+                if (row == null) {
+                    continue;
                 }
-                data.add(rowData.toArray(new String[0]));
+
+                Map<String, String> rowData = new LinkedHashMap<>();
+                for (int j = 0; j < headers.size(); j++) {
+                    Cell cell = row.getCell(j);
+                    if (cell != null) {
+                        rowData.put(headers.get(j), getCellValue(cell));
+                    } else {
+                        rowData.put(headers.get(j), "");
+                    }
+                }
+                data.add(rowData);
             }
         }
         return data;
     }
+
 
     private String getCellValue(Cell cell) {
         if (cell == null) return "";

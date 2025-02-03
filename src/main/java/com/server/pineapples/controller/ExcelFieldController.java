@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/field")
@@ -26,7 +27,7 @@ public class ExcelFieldController {
     }
 
     @Operation(
-            summary = "Faz o upload de um arquivo XLSX e retorna os dados extraídos",
+            summary = "Upload de um arquivo XLSX e retorna os dados extraídos",
             description = "Aceita um arquivo Excel (.xlsx) e retorna os dados em formato JSON"
     )
     @ApiResponses(value = {
@@ -43,7 +44,7 @@ public class ExcelFieldController {
             ) MultipartFile file
     ) {
         try {
-            List<String[]> data = excelFieldService.extractFileXlsx(file);
+            List<Map<String, String>> data = excelFieldService.extractFileXlsx(file);
             return ResponseEntity.ok(data);
         } catch (IOException e) {
             return ResponseEntity.badRequest().body("Erro ao processar o arquivo: " + e.getMessage());
