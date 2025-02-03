@@ -1,5 +1,6 @@
 package com.server.pineapples.service;
 
+import com.server.pineapples.repository.FileRepository;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,12 @@ import java.util.Map;
 
 @Service
 public class ExcelFieldService {
+
+    private final FileRepository fileRepository;
+
+    public ExcelFieldService(FileRepository fileRepository) {
+        this.fileRepository = fileRepository;
+    }
 
     public List<Map<String, String>> extractFileXlsx(MultipartFile file) throws IOException {
         List<Map<String, String>> data = new ArrayList<>();
@@ -101,4 +108,15 @@ public class ExcelFieldService {
             return cell.getCellFormula();
         }
     }
+
+    public List<Map<String, Object>> findResultByJson(List<Map<String, String>> jsonData) {
+        List<Map<String, Object>> results = new ArrayList<>();
+
+        for (Map<String, String> row : jsonData) {
+            String descricao = row.get("Descrição");
+            List<Map<String, Object>> data = fileRepository.findByResult(descricao);
+        }
+        return results;
+    }
+
 }
