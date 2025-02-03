@@ -61,7 +61,7 @@ public class ExcelFieldService {
         switch (cell.getCellType()) {
             case NUMERIC:
                 if (DateUtil.isCellDateFormatted(cell)) {
-                    SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
                     return dateFormat.format(cell.getDateCellValue());
                 }
                 return formatNumericValue(cell.getNumericCellValue());
@@ -80,7 +80,7 @@ public class ExcelFieldService {
         if (value % 1 == 0) {
             return String.valueOf((long) value);
         }
-        return String.valueOf(value).replace(".", ",");
+        return String.valueOf(value).replace(",", ".");
     }
 
     private String evaluateFormula(Cell cell) {
