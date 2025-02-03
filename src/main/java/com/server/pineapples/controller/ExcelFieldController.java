@@ -1,12 +1,14 @@
 package com.server.pineapples.controller;
 
 import com.server.pineapples.service.ExcelFieldService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -23,8 +25,23 @@ public class ExcelFieldController {
         this.excelFieldService = excelFieldService;
     }
 
-    @PostMapping("/upload")
-    public ResponseEntity<?> uploadFileXlx(@RequestParam("file")MultipartFile file) {
+    @Operation(
+            summary = "Faz o upload de um arquivo XLSX e retorna os dados extraídos",
+            description = "Aceita um arquivo Excel (.xlsx) e retorna os dados em formato JSON"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Arquivo processado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Erro ao processar o arquivo")
+    })
+    @PostMapping(value = "/upload", consumes = "multipart/form-data")
+    public ResponseEntity<?> uploadFileXlsx(
+            @RequestParam("file")
+            @io.swagger.v3.oas.annotations.Parameter(
+                    description = "Arquivo XLSX para upload",
+                    content = @Content(mediaType = "application/octet-stream",
+                            schema = @Schema(type = "string", format = "binary"))
+            ) MultipartFile file
+    ) {
         try {
             List<String[]> data = excelFieldService.extractFileXlsx(file);
             return ResponseEntity.ok(data);
