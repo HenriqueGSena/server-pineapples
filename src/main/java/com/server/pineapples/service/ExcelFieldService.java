@@ -55,6 +55,24 @@ public class ExcelFieldService {
                         rowData.put(headers.get(j), "");
                     }
                 }
+
+                String descricao = (String) rowData.get("Descrição");
+                if (descricao != null && !descricao.isEmpty()) {
+                    List<Map<String, Object>> queryResults = fileRepository.findByResult(descricao);
+
+                    if (!queryResults.isEmpty()) {
+                        Map<String, Object> dbData = queryResults.get(0);
+                        Double totalPayment = dbData.get("total_payment") != null ? ((Number) dbData.get("total_payment")).doubleValue() : 0.0;
+                        Double portalCommission = dbData.get("portal_comission") != null ? ((Number) dbData.get("portal_comission")).doubleValue() : 0.0;
+                        Double result = totalPayment - portalCommission;
+                        rowData.put("Result", String.valueOf(result));
+                    } else {
+                        rowData.put("Result", "Sem dados no banco");
+                    }
+                } else {
+                    rowData.put("Result", "Sem resultado");
+                }
+
                 data.add(rowData);
             }
         }
@@ -107,16 +125,6 @@ public class ExcelFieldService {
         } catch (Exception e) {
             return cell.getCellFormula();
         }
-    }
-
-    public List<Map<String, Object>> findResultByJson(List<Map<String, String>> jsonData) {
-        List<Map<String, Object>> results = new ArrayList<>();
-
-        for (Map<String, String> row : jsonData) {
-            String descricao = row.get("Descrição");
-            List<Map<String, Object>> data = fileRepository.findByResult(descricao);
-        }
-        return results;
     }
 
 }
