@@ -9,6 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -19,6 +20,7 @@ import java.util.Map;
 public class ExcelFieldService {
 
     private final FileRepository fileRepository;
+    private static final DecimalFormat decimalFormat = new DecimalFormat("#.###");
 
     public ExcelFieldService(FileRepository fileRepository) {
         this.fileRepository = fileRepository;
@@ -56,27 +58,31 @@ public class ExcelFieldService {
                     }
                 }
 
-                String descricao = (String) rowData.get("Descrição");
-                if (descricao != null && !descricao.isEmpty()) {
-                    List<Map<String, Object>> queryResults = fileRepository.findByResult(descricao);
-
-                    if (!queryResults.isEmpty()) {
-                        Map<String, Object> dbData = queryResults.get(0);
-                        Double totalPayment = dbData.get("total_payment") != null ? ((Number) dbData.get("total_payment")).doubleValue() : 0.0;
-                        Double portalCommission = dbData.get("portal_comission") != null ? ((Number) dbData.get("portal_comission")).doubleValue() : 0.0;
-                        Double result = totalPayment - portalCommission;
-                        rowData.put("Result", String.valueOf(result));
-                    } else {
-                        rowData.put("Result", "Sem dados no banco");
-                    }
-                } else {
-                    rowData.put("Result", "Sem resultado");
-                }
+                String result = getResultPriceBooking(rowData.get("Descrição"));
+                rowData.put("Result", result);
 
                 data.add(rowData);
             }
         }
         return data;
+    }
+
+    private String getResultPriceBooking(String descricao) {
+        if (descricao == null || descricao.isEmpty()) {
+            return "Descrição vazia";
+        }
+
+        List<Map<String, Object>> queryResults = fileRepository.findByResult(descricao);
+        if (queryResults.isEmpty()) {
+            return "Sem dados no banco";
+        }
+
+        Map<String, Object> dbData = queryResults.get(0);
+        Double totalPayment = dbData.get("total_payment") != null ? ((Number) dbData.get("total_payment")).doubleValue() : 0.0;
+        Double portalCommission = dbData.get("portal_comission") != null ? ((Number) dbData.get("portal_comission")).doubleValue() : 0.0;
+        Double result = totalPayment - portalCommission;
+
+        return decimalFormat.format(result);
     }
 
 
