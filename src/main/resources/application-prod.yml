@@ -12,6 +12,10 @@ spring:
     properties:
       hibernate:
         format_sql: true
+api:
+  external:
+    base-url: https://api.avantio.pro/pms/v2
+    key: OJ1NsSqtl5OeC0Zgrtdhn1wPnwG6ygGv
 server:
   port: 8080
 springdoc:

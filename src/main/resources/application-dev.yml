@@ -14,6 +14,10 @@ spring:
       ddl-auto: create
     show-sql: true
     format-sql: true
+api:
+  external:
+    base-url: https://api.avantio.pro/pms/v2
+    key: Ybvd1OL2u4e5S3t2t7xKXvrXg8xzUBEl
 server:
   port: 8080
 springdoc:
