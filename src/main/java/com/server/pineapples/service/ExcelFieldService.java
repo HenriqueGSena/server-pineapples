@@ -59,7 +59,7 @@ public class ExcelFieldService {
                 }
 
                 String result = getResultPriceBooking(rowData.get("Descrição"));
-                rowData.put("Result", result);
+                rowData.put("Resultado", result);
 
                 data.add(rowData);
             }
