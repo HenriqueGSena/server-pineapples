@@ -57,6 +57,9 @@ public class ExcelFieldService {
                     }
                 }
 
+                String idBooking = getBookingIdByDescription(rowData.get("Descrição"));
+                rowData.put("ID Booking", idBooking);
+
                 String result = getResultPriceBooking(rowData.get("Descrição"));
                 rowData.put("Resultado", result);
 
@@ -67,6 +70,14 @@ public class ExcelFieldService {
             }
         }
         return data;
+    }
+
+    private String getBookingIdByDescription(String descricao) {
+        List<Map<String, Object>> results = fileRepository.findByResult(descricao);
+        if (!results.isEmpty() && results.get(0).get("id_booking") != null) {
+            return String.valueOf(results.get(0).get("id_booking"));
+        }
+        return "Não encontrado";
     }
 
     private String getResultPriceBooking(String descricao) {
