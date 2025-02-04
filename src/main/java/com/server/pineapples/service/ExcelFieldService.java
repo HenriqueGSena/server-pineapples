@@ -10,11 +10,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class ExcelFieldService {
@@ -61,6 +60,9 @@ public class ExcelFieldService {
                 String result = getResultPriceBooking(rowData.get("Descrição"));
                 rowData.put("Resultado", result);
 
+                boolean valuesIguas = compareValuesAndResult(rowData.get("Valor"), result);
+                rowData.put("Valores Iguais", String.valueOf(valuesIguas));
+
                 data.add(rowData);
             }
         }
@@ -83,6 +85,19 @@ public class ExcelFieldService {
         Double result = totalPayment - portalCommission;
 
         return decimalFormat.format(result);
+    }
+
+    private boolean compareValuesAndResult( String value, String result) {
+        try {
+            value = value.replace(",", ".");
+            result = result.replace(",", ".");
+
+            double valor = Double.parseDouble(value);
+            double resultado = Double.parseDouble(result);
+            return Double.compare(valor, resultado) == 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
 
