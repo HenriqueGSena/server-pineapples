@@ -15,11 +15,11 @@ public class ApiServiceConfig {
                 .build();
     }
 
-    public String getDadosExternos() {
-        return webClient.get()
-                .uri("/dados")
-                .retrieve()
-                .bodyToMono(String.class)
-                .block(); // Bloqueante (para métodos síncronos)
-    }
+//    public String getDadosExternos() {
+//        return webClient.get()
+//                .uri("/dados")
+//                .retrieve()
+//                .bodyToMono(String.class)
+//                .block();
+//    }
 }
