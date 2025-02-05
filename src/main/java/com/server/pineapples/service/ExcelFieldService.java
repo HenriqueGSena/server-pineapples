@@ -27,6 +27,7 @@ public class ExcelFieldService {
 
     public List<Map<String, String>> extractFileXlsx(MultipartFile file) throws IOException {
         List<Map<String, String>> data = new ArrayList<>();
+        Set<String> bookingIdsSet = new HashSet<>(); // Conjunto para armazenar os Booking_Id únicos
 
         try (InputStream inputStream = file.getInputStream(); Workbook workbook = new XSSFWorkbook(inputStream)) {
             Sheet sheet = workbook.getSheetAt(0);
@@ -41,7 +42,7 @@ public class ExcelFieldService {
                 headers.add(getCellValue(cell));
             }
 
-            for (int i = 1; i <= sheet.getPhysicalNumberOfRows(); i++) {
+            for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) {
                     continue;
@@ -50,15 +51,16 @@ public class ExcelFieldService {
                 Map<String, String> rowData = new LinkedHashMap<>();
                 for (int j = 0; j < headers.size(); j++) {
                     Cell cell = row.getCell(j);
-                    if (cell != null) {
-                        rowData.put(headers.get(j), getCellValue(cell));
-                    } else {
-                        rowData.put(headers.get(j), "");
-                    }
+                    rowData.put(headers.get(j), (cell != null) ? getCellValue(cell) : "");
                 }
 
                 String idBooking = getBookingIdByDescription(rowData.get("Descrição"));
-                rowData.put("ID Booking", idBooking);
+
+                if (bookingIdsSet.contains(idBooking)) {
+                    continue;
+                }
+
+                bookingIdsSet.add(idBooking);
 
                 String result = getResultPriceBooking(rowData.get("Descrição"));
                 rowData.put("Resultado", result);
@@ -66,11 +68,14 @@ public class ExcelFieldService {
                 boolean valuesIguas = compareValuesAndResult(rowData.get("Valor"), result);
                 rowData.put("Valores Iguais", String.valueOf(valuesIguas));
 
+                rowData.put("Booking_Id", idBooking);
+
                 data.add(rowData);
             }
         }
         return data;
     }
+
 
     private String getBookingIdByDescription(String descricao) {
         List<Map<String, Object>> results = fileRepository.findByResult(descricao);
@@ -79,6 +84,7 @@ public class ExcelFieldService {
         }
         return "Não encontrado";
     }
+
 
     private String getResultPriceBooking(String descricao) {
         if (descricao == null || descricao.isEmpty()) {
