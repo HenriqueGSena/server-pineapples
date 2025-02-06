@@ -27,11 +27,11 @@ public class ExcelFieldService {
 
     public List<Map<String, String>> extractFileXlsx(MultipartFile file) throws IOException {
         List<Map<String, String>> data = new ArrayList<>();
-        Set<String> bookingIdsSet = new HashSet<>(); // Conjunto para armazenar os Booking_Id únicos
+        Set<String> bookingIdsSet = new HashSet<>();
+        Map<String, Map<String, Object>> cachedResults = new HashMap<>();
 
         try (InputStream inputStream = file.getInputStream(); Workbook workbook = new XSSFWorkbook(inputStream)) {
             Sheet sheet = workbook.getSheetAt(0);
-
             Row headerRow = sheet.getRow(0);
             if (headerRow == null) {
                 throw new IllegalArgumentException("O arquivo está vazio ou não contém cabeçalhos.");
@@ -49,25 +49,55 @@ public class ExcelFieldService {
                 }
 
                 Map<String, String> rowData = new LinkedHashMap<>();
+                boolean isEmptyRow = true;
                 for (int j = 0; j < headers.size(); j++) {
                     Cell cell = row.getCell(j);
-                    rowData.put(headers.get(j), (cell != null) ? getCellValue(cell) : "");
+                    String cellValue = (cell != null) ? getCellValue(cell) : "";
+                    rowData.put(headers.get(j), cellValue);
+
+                    if (!cellValue.isEmpty()) {
+                        isEmptyRow = false;
+                    }
                 }
 
-                String idBooking = getBookingIdByDescription(rowData.get("Descrição"));
-
-                if (bookingIdsSet.contains(idBooking)) {
+                if (isEmptyRow) {
                     continue;
                 }
 
+                String descricao = rowData.get("Descrição");
+                if (descricao == null || descricao.isEmpty()) {
+                    rowData.put("Resultado", "Descrição vazia");
+                    rowData.put("Booking_Id", "Não encontrado");
+                    rowData.put("Valores Iguais", "false");
+                    data.add(rowData);
+                    continue;
+                }
+
+                Map<String, Object> dbData = cachedResults.computeIfAbsent(descricao, desc -> {
+                    List<Map<String, Object>> results = fileRepository.findByResult(desc);
+                    return results.isEmpty() ? null : results.get(0);
+                });
+
+                String idBooking = (dbData != null && dbData.get("id_booking") != null)
+                        ? String.valueOf(dbData.get("id_booking"))
+                        : "Não encontrado";
+
+                if (bookingIdsSet.contains(idBooking)) continue;
                 bookingIdsSet.add(idBooking);
 
-                String result = getResultPriceBooking(rowData.get("Descrição"));
+
+                Double totalPayment = dbData != null && dbData.get("total_payment") != null
+                        ? ((Number) dbData.get("total_payment")).doubleValue()
+                        : 0.0;
+                Double portalCommission = dbData != null && dbData.get("portal_comission") != null
+                        ? ((Number) dbData.get("portal_comission")).doubleValue()
+                        : 0.0;
+                String result = decimalFormat.format(totalPayment - portalCommission);
+
+                boolean valuesIguais = compareValuesAndResult(rowData.get("Valor"), result);
+
                 rowData.put("Resultado", result);
-
-                boolean valuesIguas = compareValuesAndResult(rowData.get("Valor"), result);
-                rowData.put("Valores Iguais", String.valueOf(valuesIguas));
-
+                rowData.put("Valores Iguais", String.valueOf(valuesIguais));
                 rowData.put("Booking_Id", idBooking);
 
                 data.add(rowData);
@@ -76,47 +106,15 @@ public class ExcelFieldService {
         return data;
     }
 
-
-    private String getBookingIdByDescription(String descricao) {
-        List<Map<String, Object>> results = fileRepository.findByResult(descricao);
-        if (!results.isEmpty() && results.get(0).get("id_booking") != null) {
-            return String.valueOf(results.get(0).get("id_booking"));
-        }
-        return "Não encontrado";
-    }
-
-
-    private String getResultPriceBooking(String descricao) {
-        if (descricao == null || descricao.isEmpty()) {
-            return "Descrição vazia";
-        }
-
-        List<Map<String, Object>> queryResults = fileRepository.findByResult(descricao);
-        if (queryResults.isEmpty()) {
-            return "Sem dados no banco";
-        }
-
-        Map<String, Object> dbData = queryResults.get(0);
-        Double totalPayment = dbData.get("total_payment") != null ? ((Number) dbData.get("total_payment")).doubleValue() : 0.0;
-        Double portalCommission = dbData.get("portal_comission") != null ? ((Number) dbData.get("portal_comission")).doubleValue() : 0.0;
-        Double result = totalPayment - portalCommission;
-
-        return decimalFormat.format(result);
-    }
-
-    private boolean compareValuesAndResult( String value, String result) {
+    private boolean compareValuesAndResult(String value, String result) {
         try {
-            value = value.replace(",", ".");
-            result = result.replace(",", ".");
-
-            double valor = Double.parseDouble(value);
-            double resultado = Double.parseDouble(result);
+            double valor = Double.parseDouble(value.replace(",", "."));
+            double resultado = Double.parseDouble(result.replace(",", "."));
             return Double.compare(valor, resultado) == 0;
         } catch (NumberFormatException e) {
             return false;
         }
     }
-
 
     private String getCellValue(Cell cell) {
         if (cell == null) return "";
@@ -140,10 +138,7 @@ public class ExcelFieldService {
     }
 
     private String formatNumericValue(double value) {
-        if (value % 1 == 0) {
-            return String.valueOf((long) value);
-        }
-        return String.valueOf(value).replace(",", ".");
+        return (value % 1 == 0) ? String.valueOf((long) value) : String.valueOf(value).replace(",", ".");
     }
 
     private String evaluateFormula(Cell cell) {
@@ -164,5 +159,6 @@ public class ExcelFieldService {
             return cell.getCellFormula();
         }
     }
+
 
 }

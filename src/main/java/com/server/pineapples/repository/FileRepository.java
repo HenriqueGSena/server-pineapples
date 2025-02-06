@@ -16,7 +16,8 @@ public class FileRepository {
     }
 
     public List<Map<String, Object>> findByResult(String descricao) {
-        String sql = "SELECT b.id_booking, b.total_payment, b.portal_comission FROM bookings b WHERE b.portal_reference LIKE ?";
+        String sql = "SELECT b.id_booking, b.total_payment, b.portal_comission FROM " +
+                "bookings b WHERE b.portal_reference LIKE ?";
         return jdbcTemplate.queryForList(sql, "%" + descricao + "%");
     }
 }
