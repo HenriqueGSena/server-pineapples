@@ -1,7 +1,12 @@
 package com.server.pineapples.config;
 
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class ApiServiceConfig {
@@ -15,11 +20,14 @@ public class ApiServiceConfig {
                 .build();
     }
 
-//    public String getDadosExternos() {
-//        return webClient.get()
-//                .uri("/dados")
-//                .retrieve()
-//                .bodyToMono(String.class)
-//                .block();
-//    }
+    public Mono<Map<String, Object>> getBookingById(String bookingId) {
+        return webClient.get()
+                .uri("/bookings/{id}", bookingId)
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+                .onErrorResume(e -> {
+                    e.printStackTrace();
+                    return Mono.just(new HashMap<String, Object>());
+                });
+    }
 }
